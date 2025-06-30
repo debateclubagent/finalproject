@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>多角色思维教练 Demo</title>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+  <style>
+    body { font-family: sans-serif; display: flex; gap: 2rem; padding: 2rem; }
+    .card { border: 1px solid #ccc; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; width: 300px; }
+    .btn { margin-right: 0.5rem; cursor: pointer; }
+    #cards { flex: 1; }
+    #diagram { flex: 2; }
+  </style>
+</head>
+<body>
+  <div id="cards">
+    <h3>观点卡片</h3>
+    <div class="card" data-role="支持者">
+      <strong>🎩 支持者</strong> (支持)<br />
+      <p>你有人脉，机会窗口正好</p>
+      <button class="btn" onclick="updateStatus('支持者', '同意')">✔️ 同意</button>
+      <button class="btn" onclick="updateStatus('支持者', '否定')">❌ 否定</button>
+    </div>
+    <div class="card" data-role="风险顾问">
+      <strong>🕶️ 风险顾问</strong> (反对)<br />
+      <p>资金准备不足，家庭压力大</p>
+      <button class="btn" onclick="updateStatus('风险顾问', '同意')">✔️ 同意</button>
+      <button class="btn" onclick="updateStatus('风险顾问', '否定')">❌ 否定</button>
+    </div>
+    <div class="card" data-role="中立分析者">
+      <strong>🤹‍♀️ 中立分析者</strong> (中立)<br />
+      <p>可尝试副业试水，降低风险</p>
+      <button class="btn" onclick="updateStatus('中立分析者', '同意')">✔️ 同意</button>
+      <button class="btn" onclick="updateStatus('中立分析者', '否定')">❌ 否定</button>
+    </div>
+  </div>
+  <div id="diagram">
+    <h3>思维脉络树</h3>
+    <div class="mermaid" id="mermaidGraph">
+      graph TD
+      Q[是否辞职创业？] --> A[支持者]
+      Q --> B[风险顾问]
+      Q --> C[中立分析者]
+    </div>
+  </div>
+  <script>
+    const statuses = {
+      "支持者": "",
+      "风险顾问": "",
+      "中立分析者": ""
+    };
+
+    function updateStatus(role, status) {
+      statuses[role] = status;
+      renderMermaid();
+    }
+
+    function renderMermaid() {
+      let diagram = "graph TD\n";
+      diagram += "Q[是否辞职创业？]";
+      Object.keys(statuses).forEach(role => {
+        const status = statuses[role];
+        let style = "";
+        if (status === "同意") {
+          style = ":::agree";
+        } else if (status === "否定") {
+          style = ":::deny";
+        }
+        diagram += `\nQ --> ${role}[${role}]${style}`;
+      });
+
+      document.getElementById("mermaidGraph").innerHTML = diagram;
+      mermaid.run();
+    }
+  </script>
+  <style>
+    .mermaid .agree rect { stroke: green; stroke-width: 2px; fill: #eaffea; }
+    .mermaid .deny rect { stroke: red; stroke-width: 2px; fill: #ffeaea; }
+  </style>
+</body>
+</html>
