@@ -1,84 +1,112 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>多角色思维教练 Demo</title>
-  <script type="module">
-    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
-    mermaid.initialize({ startOnLoad: true });
-  </script>
+  <title>多角色思维白板 Demo</title>
+  <script src="https://unpkg.com/tldraw@1.5.6/dist/tldraw.umd.min.js"></script>
   <style>
-    body { font-family: sans-serif; display: flex; gap: 2rem; padding: 2rem; }
-    .card { border: 1px solid #ccc; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; width: 300px; }
-    .btn { margin-right: 0.5rem; cursor: pointer; }
-    #cards { flex: 1; }
-    #diagram { flex: 2; }
+    html, body, #whiteboard {
+      margin: 0;
+      height: 100%;
+      width: 100%;
+      display: flex;
+    }
+    #board {
+      flex: 3;
+      border-right: 1px solid #ddd;
+    }
+    #summary {
+      flex: 1;
+      padding: 1rem;
+      font-family: sans-serif;
+    }
+    .btn {
+      margin-right: 0.5rem;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
-  <div id="cards">
-    <h3>观点卡片</h3>
-    <div class="card" data-role="支持者">
-      <strong>🎩 支持者</strong> (支持)<br />
-      <p>你有人脉，机会窗口正好</p>
-      <button class="btn" onclick="updateStatus('支持者', '同意')">✔️ 同意</button>
-      <button class="btn" onclick="updateStatus('支持者', '否定')">❌ 否定</button>
-    </div>
-    <div class="card" data-role="风险顾问">
-      <strong>🕶️ 风险顾问</strong> (反对)<br />
-      <p>资金准备不足，家庭压力大</p>
-      <button class="btn" onclick="updateStatus('风险顾问', '同意')">✔️ 同意</button>
-      <button class="btn" onclick="updateStatus('风险顾问', '否定')">❌ 否定</button>
-    </div>
-    <div class="card" data-role="中立分析者">
-      <strong>🤹‍♀️ 中立分析者</strong> (中立)<br />
-      <p>可尝试副业试水，降低风险</p>
-      <button class="btn" onclick="updateStatus('中立分析者', '同意')">✔️ 同意</button>
-      <button class="btn" onclick="updateStatus('中立分析者', '否定')">❌ 否定</button>
-    </div>
+  <div id="board"></div>
+  <div id="summary">
+    <h3>阶段小结</h3>
+    <div id="agreeList">✔️ 同意: 无</div>
+    <div id="denyList">❌ 否定: 无</div>
+    <button class="btn" onclick="exportSummary()">更新小结</button>
   </div>
-  <div id="diagram">
-    <h3>思维脉络树</h3>
-    <div class="mermaid" id="mermaidGraph">
-      graph TD
-      Q[是否辞职创业？] --> A[支持者]
-      Q --> B[风险顾问]
-      Q --> C[中立分析者]
-    </div>
-  </div>
+
   <script>
+    const app = new window.tldraw.TldrawApp({
+      container: document.getElementById("board"),
+    });
+
+    const cards = [
+      { id: 'supporter', text: '🎩 支持者\n你有人脉，机会窗口正好', x: 100, y: 100 },
+      { id: 'risk', text: '🕶️ 风险顾问\n资金准备不足，家庭压力大', x: 400, y: 100 },
+      { id: 'neutral', text: '🤹‍♀️ 中立分析者\n可尝试副业试水，降低风险', x: 250, y: 300 },
+    ];
+
     const statuses = {
-      "支持者": "",
-      "风险顾问": "",
-      "中立分析者": ""
+      supporter: '',
+      risk: '',
+      neutral: ''
     };
 
-    function updateStatus(role, status) {
-      statuses[role] = status;
-      renderMermaid();
+    // 创建卡片，带状态背景
+    cards.forEach(c => {
+      app.createShape({
+        id: c.id,
+        type: 'text',
+        x: c.x,
+        y: c.y,
+        props: {
+          text: `${c.text}\n[✔️同意] [❌否定]`,
+        }
+      });
+    });
+
+    // 简单实现点击形状改变状态
+    app.on('shape:clicked', (shape) => {
+      const id = shape.id;
+      if (!id) return;
+      if (statuses[id] === '') {
+        statuses[id] = 'agree';
+        updateShapeStyle(id, 'agree');
+      } else if (statuses[id] === 'agree') {
+        statuses[id] = 'deny';
+        updateShapeStyle(id, 'deny');
+      } else {
+        statuses[id] = '';
+        updateShapeStyle(id, '');
+      }
+    });
+
+    function updateShapeStyle(id, status) {
+      const shape = app.getShape(id);
+      if (!shape) return;
+      let fill = '#fff';
+      if (status === 'agree') fill = '#eaffea';
+      if (status === 'deny') fill = '#ffeaea';
+      app.updateShape({
+        id: id,
+        props: { text: shape.props.text },
+        style: { fill },
+      });
     }
 
-    function renderMermaid() {
-      let diagram = "graph TD\n";
-      diagram += "Q[是否辞职创业？]";
-      Object.keys(statuses).forEach(role => {
-        const status = statuses[role];
-        let style = "";
-        if (status === "同意") {
-          style = ":::agree";
-        } else if (status === "否定") {
-          style = ":::deny";
-        }
-        diagram += `\nQ --> ${role}[${role}]${style}`;
+    function exportSummary() {
+      let agree = [];
+      let deny = [];
+      Object.keys(statuses).forEach(id => {
+        if (statuses[id] === 'agree') agree.push(id);
+        if (statuses[id] === 'deny') deny.push(id);
       });
-
-      document.getElementById("mermaidGraph").innerHTML = diagram;
-      mermaid.run();
+      document.getElementById('agreeList').innerText = '✔️ 同意: ' + (agree.length ? agree.join(', ') : '无');
+      document.getElementById('denyList').innerText = '❌ 否定: ' + (deny.length ? deny.join(', ') : '无');
     }
   </script>
-  <style>
-    .mermaid .agree rect { stroke: green; stroke-width: 2px; fill: #eaffea; }
-    .mermaid .deny rect { stroke: red; stroke-width: 2px; fill: #ffeaea; }
-  </style>
 </body>
 </html>
